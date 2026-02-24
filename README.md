@@ -131,14 +131,16 @@ run_app.bat
 ## Datadog APM 連携
 
 このアプリケーションは **ddtrace** ライブラリを使用して Datadog APM と連携します。
-Windows 環境では Single Step Instrumentation (SSI) がサポートされていないため、`ddtrace-run` コマンドを使用してアプリケーションを計装します。
+Windows 環境では Single Step Instrumentation (SSI) がサポートされていないため、コード内で直接 ddtrace を初期化します。
 
 ### APM の仕組み
 
 1. `ddtrace` パッケージが `requirements.txt` に含まれています
-2. アプリケーションは `ddtrace-run` コマンド経由で起動されます
-3. `ddtrace-run` が自動的に Flask アプリケーションを計装します
+2. アプリケーションコード内で `patch_all()` を呼び出して計装を有効化
+3. `patch_all()` が自動的に Flask アプリケーションを計装します
 4. トレースデータは Datadog Agent に送信されます
+
+**注意**: Windows では `ddtrace-run` コマンドは「OSError: Exec format error」エラーが発生するため、コード内での初期化方式を採用しています。
 
 ### Datadog Agent のセットアップ
 
@@ -168,7 +170,7 @@ Windows 環境では Single Step Instrumentation (SSI) がサポートされて�
 | `DD_LOGS_INJECTION` | true | ログにトレースIDを注入 |
 | `DD_TRACE_SAMPLE_RATE` | 1 | サンプリングレート（1=100%） |
 
-### 手動でのddtrace実行
+### 手動での実行
 
 スクリプトを使用せずに手動で実行する場合：
 
@@ -176,8 +178,10 @@ Windows 環境では Single Step Instrumentation (SSI) がサポートされて�
 set DD_SERVICE=apm-test-python
 set DD_ENV=windows-test
 set DD_VERSION=1.0.0
-python -m ddtrace.commands.ddtrace_run app.py
+python app.py
 ```
+
+**注意**: Windows では `ddtrace-run` コマンドは「OSError: Exec format error」エラーが発生するため使用できません。代わりに、コード内で `patch_all()` を呼び出すことで APM 計装を行います。
 
 ## Datadog でトレースを確認
 

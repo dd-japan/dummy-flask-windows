@@ -139,7 +139,8 @@ echo.
 echo   Press Ctrl+C to stop
 echo.
 
-REM Run with ddtrace for APM instrumentation
-"%PYTHON_EXE%" -m ddtrace.commands.ddtrace_run "%SCRIPT_DIR%app.py"
+REM Run app directly - ddtrace is initialized via patch_all() in the code
+REM Note: ddtrace-run has issues on Windows (OSError: Exec format error)
+"%PYTHON_EXE%" "%SCRIPT_DIR%app.py"
 
 pause

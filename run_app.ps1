@@ -170,10 +170,11 @@ Write-Host "  Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host ""
 
 if ($RunInBackground) {
-    $process = Start-Process -FilePath $pythonExe -ArgumentList "-m", "ddtrace.commands.ddtrace_run", $appPath -WindowStyle Hidden -PassThru
-    Write-Success "Application started in background with ddtrace (PID: $($process.Id))"
+    $process = Start-Process -FilePath $pythonExe -ArgumentList $appPath -WindowStyle Hidden -PassThru
+    Write-Success "Application started in background (PID: $($process.Id))"
     Write-Host "    To stop: Stop-Process -Id $($process.Id)" -ForegroundColor Gray
 } else {
-    # Run with ddtrace for APM instrumentation
-    & $pythonExe -m ddtrace.commands.ddtrace_run $appPath
+    # Run app directly - ddtrace is initialized via patch_all() in the code
+    # Note: ddtrace-run has issues on Windows (OSError: Exec format error)
+    & $pythonExe $appPath
 }
