@@ -51,6 +51,8 @@ run_app.bat
 | `install_python.bat` | Python 3.11 インストール用バッチスクリプト |
 | `run_app.ps1` | アプリケーション実行用 PowerShell スクリプト |
 | `run_app.bat` | アプリケーション実行用バッチスクリプト |
+| `cleanup.ps1` | クリーンアップ用 PowerShell スクリプト |
+| `cleanup.bat` | クリーンアップ用バッチスクリプト |
 | `app.py` | Flask アプリケーション |
 | `requirements.txt` | Python 依存パッケージ |
 
@@ -233,6 +235,104 @@ Visual C++ Build Tools が必要な場合があります：
 1. https://visualstudio.microsoft.com/visual-cpp-build-tools/ からダウンロード
 2. "Desktop development with C++" ワークロードを選択してインストール
 3. `pip install ddtrace` を再実行
+
+## クリーンアップ
+
+### クリーンアップスクリプトの使用
+
+**PowerShell（推奨）:**
+```powershell
+# 基本クリーンアップ（アプリ停止 + ファイアウォールルール削除）
+powershell -ExecutionPolicy Bypass -File .\cleanup.ps1
+
+# Python パッケージも削除
+powershell -ExecutionPolicy Bypass -File .\cleanup.ps1 -RemovePackages
+
+# Python 自体もアンインストール
+powershell -ExecutionPolicy Bypass -File .\cleanup.ps1 -UninstallPython
+
+# 確認なしで実行
+powershell -ExecutionPolicy Bypass -File .\cleanup.ps1 -Force
+```
+
+**バッチファイル:**
+```cmd
+cleanup.bat
+```
+
+### クリーンアップスクリプトパラメータ（PowerShell）
+
+| パラメータ | 説明 |
+|-----------|------|
+| `-RemovePackages` | Flask, ddtrace パッケージをアンインストール |
+| `-UninstallPython` | Python をアンインストール |
+| `-Force` | 確認プロンプトをスキップ |
+
+### 手動クリーンアップ手順
+
+#### 1. アプリケーションの停止
+
+**方法A: タスクマネージャーから**
+1. タスクマネージャーを開く（Ctrl + Shift + Esc）
+2. 「詳細」タブを選択
+3. `python.exe` を探して選択
+4. 「タスクの終了」をクリック
+
+**方法B: コマンドラインから**
+```cmd
+taskkill /F /IM python.exe
+```
+
+**方法C: 特定のポートのプロセスを停止**
+```cmd
+REM ポート5000を使用しているプロセスを確認
+netstat -ano | findstr :5000
+
+REM 表示されたPIDを使って停止（例：PID 1234）
+taskkill /F /PID 1234
+```
+
+#### 2. ファイアウォールルールの削除
+
+**方法A: コマンドラインから**
+```cmd
+netsh advfirewall firewall delete rule name="Datadog APM Test App"
+```
+
+**方法B: GUI から**
+1. Windows Defender ファイアウォール を開く
+2. 「詳細設定」をクリック
+3. 「受信の規則」を選択
+4. 「Datadog APM Test App」を探して右クリック
+5. 「削除」を選択
+
+#### 3. Python パッケージの削除
+
+```cmd
+pip uninstall Flask ddtrace -y
+```
+
+#### 4. Python のアンインストール
+
+1. 設定 > アプリ > アプリと機能 を開く
+2. 「Python 3.x」を検索
+3. 選択して「アンインストール」をクリック
+
+または PowerShell から：
+```powershell
+# Python インストールディレクトリ内の uninstall.exe を実行
+C:\Python311\uninstall.exe /quiet
+```
+
+#### 5. 残存ファイルの削除（オプション）
+
+```cmd
+REM Python インストールディレクトリの削除
+rmdir /s /q C:\Python311
+
+REM pip キャッシュの削除
+rmdir /s /q %LOCALAPPDATA%\pip\cache
+```
 
 ## 参考リンク
 
