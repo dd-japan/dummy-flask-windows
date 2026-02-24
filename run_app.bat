@@ -61,8 +61,8 @@ if exist "%SCRIPT_DIR%requirements.txt" (
     "%PYTHON_EXE%" -m pip install -r "%SCRIPT_DIR%requirements.txt" --quiet
     echo [OK] Dependencies installed from requirements.txt
 ) else (
-    "%PYTHON_EXE%" -m pip install Flask --quiet
-    echo [OK] Flask installed
+    "%PYTHON_EXE%" -m pip install Flask ddtrace --quiet
+    echo [OK] Flask and ddtrace installed
 )
 
 REM ============================================
@@ -139,6 +139,7 @@ echo.
 echo   Press Ctrl+C to stop
 echo.
 
-"%PYTHON_EXE%" "%SCRIPT_DIR%app.py"
+REM Run with ddtrace for APM instrumentation
+"%PYTHON_EXE%" -m ddtrace.commands.ddtrace_run "%SCRIPT_DIR%app.py"
 
 pause

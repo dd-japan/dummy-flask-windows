@@ -5,8 +5,7 @@ A simple Flask application for testing Datadog APM features including:
 - Latency testing
 - Request tracing
 
-Note: ddtrace is auto-injected by the Datadog Agent's Single Step Instrumentation.
-No code changes required - just ensure the Datadog Agent is installed with APM enabled.
+ddtrace automatically instruments Flask - no custom instrumentation needed.
 """
 
 import os
@@ -14,6 +13,10 @@ import time
 import random
 import logging
 from flask import Flask, render_template_string, jsonify, request
+
+# Initialize Datadog APM tracer with auto-instrumentation
+from ddtrace import patch_all
+patch_all()
 
 app = Flask(__name__)
 
@@ -99,6 +102,13 @@ HTML_TEMPLATE = """
             width: 80px;
             margin: 0 10px;
         }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -147,6 +157,16 @@ HTML_TEMPLATE = """
     <div class="card">
         <h2>📊 Load Testing</h2>
         <p>Generate multiple requests to test APM under load.</p>
+        <label>Endpoint type:
+            <select id="load-endpoint">
+                <option value="/latency/fast">Fast (100ms)</option>
+                <option value="/latency/medium">Medium (500ms)</option>
+                <option value="/latency/slow">Slow (2s)</option>
+                <option value="/error/500">Error 500</option>
+                <option value="/error/random">Random Error (50%)</option>
+                <option value="/health">Health Check</option>
+            </select>
+        </label>
         <label>Number of requests: <input type="number" id="load-count" value="10" min="1" max="100"></label>
         <button onclick="runLoadTest()">Run Load Test</button>
         <div id="load-result" class="result" style="display:none;"></div>
@@ -183,10 +203,12 @@ ${error.message}`;
         }
 
         async function runLoadTest() {
+            const endpoint = document.getElementById('load-endpoint').value;
+            const endpointLabel = document.getElementById('load-endpoint').selectedOptions[0].text;
             const count = parseInt(document.getElementById('load-count').value);
             const resultDiv = document.getElementById('load-result');
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `Running ${count} requests...`;
+            resultDiv.innerHTML = `Running ${count} requests to ${endpointLabel}...`;
             
             const results = { success: 0, error: 0, totalTime: 0 };
             const startTime = Date.now();
@@ -194,7 +216,7 @@ ${error.message}`;
             const promises = [];
             for (let i = 0; i < count; i++) {
                 promises.push(
-                    fetch('/latency/fast')
+                    fetch(endpoint)
                         .then(r => { if (r.ok) results.success++; else results.error++; })
                         .catch(() => results.error++)
                 );
@@ -203,7 +225,9 @@ ${error.message}`;
             await Promise.all(promises);
             results.totalTime = Date.now() - startTime;
             
-            resultDiv.innerHTML = `<span class="status success">Load Test Complete</span>
+            const statusClass = results.error > 0 ? (results.success > 0 ? 'warning' : 'error') : 'success';
+            resultDiv.innerHTML = `<span class="status ${statusClass}">Load Test Complete</span>
+Endpoint: ${endpointLabel} (${endpoint})
 Total Requests: ${count}
 Successful: ${results.success}
 Failed: ${results.error}

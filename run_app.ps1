@@ -92,8 +92,8 @@ if (Test-Path $requirementsPath) {
     & $pythonExe -m pip install -r $requirementsPath --quiet
     Write-Success "Dependencies installed from requirements.txt"
 } else {
-    & $pythonExe -m pip install Flask --quiet
-    Write-Success "Flask installed"
+    & $pythonExe -m pip install Flask ddtrace --quiet
+    Write-Success "Flask and ddtrace installed"
 }
 
 # ============================================
@@ -170,9 +170,10 @@ Write-Host "  Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host ""
 
 if ($RunInBackground) {
-    $process = Start-Process -FilePath $pythonExe -ArgumentList $appPath -WindowStyle Hidden -PassThru
-    Write-Success "Application started in background (PID: $($process.Id))"
+    $process = Start-Process -FilePath $pythonExe -ArgumentList "-m", "ddtrace.commands.ddtrace_run", $appPath -WindowStyle Hidden -PassThru
+    Write-Success "Application started in background with ddtrace (PID: $($process.Id))"
     Write-Host "    To stop: Stop-Process -Id $($process.Id)" -ForegroundColor Gray
 } else {
-    & $pythonExe $appPath
+    # Run with ddtrace for APM instrumentation
+    & $pythonExe -m ddtrace.commands.ddtrace_run $appPath
 }
